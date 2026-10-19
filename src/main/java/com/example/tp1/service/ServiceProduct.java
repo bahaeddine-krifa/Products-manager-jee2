@@ -5,23 +5,34 @@ import com.example.tp1.dto.ProductMapper;
 import com.example.tp1.entity.Product;
 import com.example.tp1.repository.ProductRepository;
 import com.example.tp1.exception.ResourceNotFoundException;
+import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class ServiceProduct implements IServiceProduct {
 
-    private ProductRepository productRepository;
+    private final ProductRepository productRepository;
 
-    private ProductMapper productMapper;
 
     @Override
     public ProductDto add(ProductDto productDto) {
-        Product product = productMapper.toEntity(productDto);
+        Product product = ProductMapper.toEntity(productDto);
         Product savedProduct = productRepository.save(product);
-        return productMapper.toDto(savedProduct);
+        return ProductMapper.toDto(savedProduct);
     }
 
     @Override
@@ -36,7 +47,7 @@ public class ServiceProduct implements IServiceProduct {
     public ProductDto getById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
-        return productMapper.toDto(product);
+        return ProductMapper.toDto(product);
     }
 
     @Override
@@ -51,7 +62,7 @@ public class ServiceProduct implements IServiceProduct {
         existingProduct.setPhoto(productDto.getPhoto());
         
         Product updatedProduct = productRepository.save(existingProduct);
-        return productMapper.toDto(updatedProduct);
+        return ProductMapper.toDto(updatedProduct);
     }
 
     @Override
@@ -69,4 +80,52 @@ public class ServiceProduct implements IServiceProduct {
                 .map(p->ProductMapper.toDto(p))
                 .toList();
     }
+
+    @Override
+    public String uploadFile(MultipartFile file) throws IOException {
+
+        // Generate a unique filename using the timestamp
+        String newName = System.currentTimeMillis() + "_"
+                + file.getOriginalFilename();
+
+        // Define the upload directory
+        String uploadDir = System.getProperty("user.home") + "/photos";
+        Path uploadPath = Paths.get(uploadDir);
+
+        // Create the directory if it does not exist
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        // Create the complete file path
+        Path filePath = uploadPath.resolve(newName);
+
+        // Save the file
+        Files.copy(file.getInputStream(), filePath,
+                StandardCopyOption.REPLACE_EXISTING);
+
+        // Return the new filename
+        return newName;
+    }
+
+    @Override
+    public byte[] getImage(Long id) throws IOException {
+
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Product not found with id: " + id));
+
+        String photoName = product.getPhoto();
+
+        if (photoName == null || photoName.isBlank()) {
+            throw new ResourceNotFoundException(
+                    "No image associated with product: " + id);
+        }
+
+        Path imagePath = Paths.get(
+                System.getProperty("user.home"), "photos", photoName);
+
+        return Files.readAllBytes(imagePath);
+    }
+
 }

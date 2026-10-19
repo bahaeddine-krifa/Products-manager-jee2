@@ -5,23 +5,26 @@ import com.example.tp1.dto.CategoryMapper;
 import com.example.tp1.entity.Category;
 import com.example.tp1.repository.CategoryRepository;
 import com.example.tp1.exception.ResourceNotFoundException;
+import jakarta.transaction.Transactional;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class ServiceCategory implements IServiceCategory {
 
-    private CategoryRepository categoryRepository;
-
-    private CategoryMapper categoryMapper;
+    private final CategoryRepository categoryRepository;
 
     @Override
     public CategoryDto add(CategoryDto categoryDto) {
-        Category category = categoryMapper.toEntity(categoryDto);
+        Category category = CategoryMapper.toEntity(categoryDto);
         Category savedCategory = categoryRepository.save(category);
-        return categoryMapper.toDto(savedCategory);
+        return CategoryMapper.toDto(savedCategory);
     }
 
     @Override
@@ -36,7 +39,7 @@ public class ServiceCategory implements IServiceCategory {
     public CategoryDto getById(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
-        return categoryMapper.toDto(category);
+        return CategoryMapper.toDto(category);
     }
 
     @Override
@@ -48,7 +51,7 @@ public class ServiceCategory implements IServiceCategory {
         existingCategory.setName(categoryDto.getName());
         
         Category updatedCategory = categoryRepository.save(existingCategory);
-        return categoryMapper.toDto(updatedCategory);
+        return CategoryMapper.toDto(updatedCategory);
     }
 
     @Override
