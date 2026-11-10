@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,6 +23,7 @@ public class ProductController {
     private final IServiceProduct serviceProduct;
 
     @GetMapping("/all")
+    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER')")
     public ResponseEntity<List<ProductDto>> getAllProducts()
     {
         return ResponseEntity.ok(serviceProduct.getAll());
@@ -46,6 +48,7 @@ public class ProductController {
             value = "/add",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ProductDto> addProductWithImage(
             @RequestPart("product") @Valid ProductDto dto,
             @RequestPart(value = "file", required = false)
@@ -74,6 +77,7 @@ public class ProductController {
     }
 
     @DeleteMapping("/delete/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id)
     {
         serviceProduct.delete(id);
@@ -81,6 +85,7 @@ public class ProductController {
     }
 
     @PutMapping("/update/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ProductDto> updateProduct(
             @Valid @RequestBody ProductDto productDto,
             @PathVariable Long id
